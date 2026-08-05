@@ -29,6 +29,14 @@ If you're reading a post and the code on `main` looks ahead of it — that's why
 | v2 | Multi-user piggy banks, savings goals | 17 |
 | v2 | ERC-20 deposits | 18 |
 
+## Cheat sheets
+
+Practical references for the series live in [`docs/`](docs/):
+
+- [`docs/faucets.md`](docs/faucets.md) — where to get free Sepolia test ETH (you'll need it for every hands-on post; grab some before you start)
+
+More cheat sheets (RPC endpoints, tooling) will land here as the series reaches them.
+
 ## Stack
 
 Solidity · Foundry · TypeScript · viem · React · wagmi
