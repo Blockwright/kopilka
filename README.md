@@ -34,8 +34,9 @@ If you're reading a post and the code on `main` looks ahead of it — that's why
 Practical references for the series live in [`docs/`](docs/):
 
 - [`docs/faucets.md`](docs/faucets.md) — where to get free Sepolia test ETH (you'll need it for every hands-on post; grab some before you start)
+- [`docs/rpc.md`](docs/rpc.md) — public RPC endpoints for Mainnet & Sepolia + your first raw JSON-RPC call with curl
 
-More cheat sheets (RPC endpoints, tooling) will land here as the series reaches them.
+More cheat sheets (tooling, testing) will land here as the series reaches them.
 
 ## Stack
 
