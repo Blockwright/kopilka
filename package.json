@@ -1,0 +1,16 @@
+{
+  "name": "kopilka",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "send": "tsx --env-file=.env scripts/send.ts"
+  },
+  "dependencies": {
+    "viem": "^2.55.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  }
+}
