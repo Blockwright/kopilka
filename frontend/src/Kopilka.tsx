@@ -1,11 +1,13 @@
-// frontend/src/Kopilka.tsx — пост 13/20: кошелёк + живой прогресс
+// frontend/src/Kopilka.tsx — пост 14/20: запись из UI, два ожидания
 import { useEffect } from "react";
-import { formatEther } from "viem";
+import { formatEther, parseEther } from "viem";
 import {
   useAccount,
   useBlockNumber,
   useConnect,
   useReadContract,
+  useWaitForTransactionReceipt,
+  useWriteContract,
 } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -23,19 +25,33 @@ const kopilkaAbi = [
       { name: "target", type: "uint256" },
     ],
   },
+  {
+    type: "function",
+    name: "deposit",
+    stateMutability: "payable",
+    inputs: [],
+    outputs: [],
+  },
 ] as const;
 
 export function Kopilka() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
 
+  // чтение — пост 13
   const { data: progress, queryKey } = useReadContract({
     abi: kopilkaAbi,
     address: KOPILKA_ADDRESS,
     functionName: "progress",
   });
 
-  // реактивность: новый блок -> перечитать контракт
+  // запись — пост 14: ожидание №1 (подпись) и №2 (блок)
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: isMining, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  // реактивность из поста 13: новый блок -> перечитать прогресс
   const queryClient = useQueryClient();
   const { data: blockNumber } = useBlockNumber({ watch: true });
   useEffect(() => {
@@ -52,6 +68,14 @@ export function Kopilka() {
 
   const [current, target] = progress ?? [0n, 0n];
 
+  const deposit = () =>
+    writeContract({
+      abi: kopilkaAbi,
+      address: KOPILKA_ADDRESS,
+      functionName: "deposit",
+      value: parseEther("0.01"),
+    });
+
   return (
     <main>
       <p>Ты: {address}</p>
@@ -62,6 +86,18 @@ export function Kopilka() {
         value={Number(formatEther(current))}
         max={Number(formatEther(target)) || 1}
       />
+
+      <button onClick={deposit} disabled={isPending || isMining}>
+        {isPending
+          ? "Подпиши в кошельке…"
+          : isMining
+            ? "Транзакция в пути…"
+            : "Закинуть 0.01 ETH"}
+      </button>
+
+      {isSuccess && <p>В блоке! Прогресс выше обновится сам.</p>}
+      {error && <p>Не вышло: {error.name}</p>}
+
       <p>Блок №{blockNumber?.toString()} — страница обновляется сама</p>
     </main>
   );
