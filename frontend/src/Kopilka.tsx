@@ -1,5 +1,5 @@
-// frontend/src/Kopilka.tsx — пост 14/20: запись из UI, два ожидания
-import { useEffect } from "react";
+// frontend/src/Kopilka.tsx — пост 15/20: подписка на события
+import { useEffect, useState } from "react";
 import { formatEther, parseEther } from "viem";
 import {
   useAccount,
@@ -7,6 +7,7 @@ import {
   useConnect,
   useReadContract,
   useWaitForTransactionReceipt,
+  useWatchContractEvent,
   useWriteContract,
 } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,6 +33,15 @@ const kopilkaAbi = [
     inputs: [],
     outputs: [],
   },
+  {
+    type: "event",
+    name: "Deposited",
+    inputs: [
+      { indexed: true, name: "from", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+      { indexed: false, name: "total", type: "uint256" },
+    ],
+  },
 ] as const;
 
 export function Kopilka() {
@@ -49,6 +59,25 @@ export function Kopilka() {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isMining, isSuccess } = useWaitForTransactionReceipt({
     hash,
+  });
+
+  // события — пост 15: контракт кричит, страница слышит
+  const [feed, setFeed] = useState<string[]>([]);
+  useWatchContractEvent({
+    abi: kopilkaAbi,
+    address: KOPILKA_ADDRESS,
+    eventName: "Deposited",
+    onLogs(logs) {
+      setFeed((prev) =>
+        [
+          ...logs.map(
+            (log) =>
+              `+${formatEther(log.args.amount ?? 0n)} ETH от ${log.args.from?.slice(0, 8)}…`,
+          ),
+          ...prev,
+        ].slice(0, 5),
+      );
+    },
   });
 
   // реактивность из поста 13: новый блок -> перечитать прогресс
@@ -97,6 +126,14 @@ export function Kopilka() {
 
       {isSuccess && <p>В блоке! Прогресс выше обновится сам.</p>}
       {error && <p>Не вышло: {error.name}</p>}
+
+      <h2>Живая лента</h2>
+      <ul>
+        {feed.length === 0 && <li>Тишина… сделай депозит — услышим</li>}
+        {feed.map((line, i) => (
+          <li key={i}>{line}</li>
+        ))}
+      </ul>
 
       <p>Блок №{blockNumber?.toString()} — страница обновляется сама</p>
     </main>
