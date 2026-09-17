@@ -1,5 +1,5 @@
 // frontend/src/Kopilka.tsx — пост 15/20: подписка на события
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatEther, parseEther } from "viem";
 import {
   useAccount,
@@ -63,14 +63,23 @@ export function Kopilka() {
 
   // события — пост 15: контракт кричит, страница слышит
   const [feed, setFeed] = useState<string[]>([]);
+  // доставка не exactly-once: дедуплицируем по txHash+logIndex (словарь №11)
+  const seen = useRef(new Set<string>());
   useWatchContractEvent({
     abi: kopilkaAbi,
     address: KOPILKA_ADDRESS,
     eventName: "Deposited",
     onLogs(logs) {
+      const fresh = logs.filter((log) => {
+        const key = `${log.transactionHash}-${log.logIndex}`;
+        if (seen.current.has(key)) return false;
+        seen.current.add(key);
+        return true;
+      });
+      if (fresh.length === 0) return;
       setFeed((prev) =>
         [
-          ...logs.map(
+          ...fresh.map(
             (log) =>
               `+${formatEther(log.args.amount ?? 0n)} ETH от ${log.args.from?.slice(0, 8)}…`,
           ),
