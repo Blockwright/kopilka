@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// Копилка v2.1 — пост 17/20: фикс реентрабельности перестановкой двух строк (CEI).
-contract Kopilka {
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+/// Копилка v2.2 — пост 18/20: поверх CEI вешаем аудированный замок.
+/// Две независимые защиты на refund(): правильный порядок строк (пост 17)
+/// и nonReentrant из OpenZeppelin — пояс и подтяжки.
+contract Kopilka is ReentrancyGuard {
     address public owner;
     uint256 public goal;
     mapping(address => uint256) public deposits;
@@ -26,13 +30,13 @@ contract Kopilka {
         emit Deposited(msg.sender, msg.value, address(this).balance);
     }
 
-    /// Checks-Effects-Interactions: сначала записали, потом отдали.
-    function refund() external {
+    /// nonReentrant — замок сверх CEI: повторный вход не пройдёт в принципе.
+    function refund() external nonReentrant {
         uint256 amount = deposits[msg.sender];
         if (amount == 0) revert NothingToRefund();
 
-        deposits[msg.sender] = 0;                           // сначала записали
-        (bool ok, ) = msg.sender.call{value: amount}("");  // потом отдали
+        deposits[msg.sender] = 0;
+        (bool ok, ) = msg.sender.call{value: amount}("");
         require(ok, "refund failed");
     }
 
