@@ -49,3 +49,25 @@ This is **educational code**. It is intentionally built step by step, including 
 ---
 
 *Built in public. Season 1 in progress.*
+
+## Deploy to Sepolia (post 19)
+
+Prerequisites: Sepolia test ETH on the deployer address (see [`docs/faucets.md`](docs/faucets.md)) and a `.env` (copy from `.env.example`):
+
+- `SEPOLIA_RPC_URL` — your node endpoint
+- `SEPOLIA_PRIVATE_KEY` — a **dedicated test wallet** key, never your main one
+- `ETHERSCAN_API_KEY` — for source verification
+
+Deploy with Ignition:
+
+```bash
+npx hardhat ignition deploy ignition/modules/Kopilka.ts --network sepolia
+```
+
+Verify the source on Etherscan (constructor arg = goal in wei):
+
+```bash
+npx hardhat verify --network sepolia <address> "<goal>"
+```
+
+Then point the frontend at the live contract: set `KOPILKA_ADDRESS` in `frontend/src/Kopilka.tsx` to the deployed address and switch MetaMask to Sepolia.
