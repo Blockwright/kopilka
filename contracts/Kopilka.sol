@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// Копилка v2 — пост 16/20: добавили refund() и вместе с ним дыру реентрабельности.
-/// withdraw() владельца — как был; дыра только в refund().
+/// Копилка v2.1 — пост 17/20: фикс реентрабельности перестановкой двух строк (CEI).
 contract Kopilka {
     address public owner;
     uint256 public goal;
-    mapping(address => uint256) public deposits; // кто сколько внёс
+    mapping(address => uint256) public deposits;
 
     event Deposited(address indexed from, uint256 amount, uint256 total);
     event Withdrawn(address indexed to, uint256 amount);
@@ -27,14 +26,14 @@ contract Kopilka {
         emit Deposited(msg.sender, msg.value, address(this).balance);
     }
 
-    /// Передумал — забери вклад, пока цель не достигнута. УЯЗВИМО (пост 16).
+    /// Checks-Effects-Interactions: сначала записали, потом отдали.
     function refund() external {
         uint256 amount = deposits[msg.sender];
         if (amount == 0) revert NothingToRefund();
 
-        (bool ok, ) = msg.sender.call{value: amount}(""); // 1. отдали деньги
+        deposits[msg.sender] = 0;                           // сначала записали
+        (bool ok, ) = msg.sender.call{value: amount}("");  // потом отдали
         require(ok, "refund failed");
-        deposits[msg.sender] = 0;                          // 2. обнулили вклад
     }
 
     function withdraw() external {
